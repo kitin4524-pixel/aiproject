@@ -3,21 +3,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# 1. 페이지 기본 설정 (가장 처음에 와야 합니다)
+# 1. 페이지 설정 (가장 처음에 위치해야 합니다)
 st.set_page_config(
     page_title="국가별 MBTI 비율 분석",
     page_icon="🌍",
     layout="wide"
 )
 
-# 2. 타이틀 및 안내 문구
+# 2. 제목 및 설명
 st.title("🌍 국가별 MBTI 분포 시각화 대시보드")
-st.markdown("국가를 선택하면 해당 국가의 16가지 MBTI 유형 비율을 막대그래프로 보여줍니다. (1위 유형: 빨간색, 나머지: 파란색 그라데이션)")
+st.markdown("국가를 선택하면 해당 국가의 16가지 MBTI 유형 비율을 막대그래프로 보여줍니다. (1위: 빨간색, 나머지: 파란색 그라데이션)")
 
 # 3. 데이터 로드 함수 (캐싱 적용)
 @st.cache_data
 def load_data():
-    # CSV 파일 읽기 (파일명이 정확한지 확인해주세요)
+    # CSV 파일 읽기
     df = pd.read_csv("countriesMBTI_16types.csv")
     return df
 
@@ -25,7 +25,7 @@ def load_data():
 try:
     df = load_data()
 except Exception as e:
-    st.error(f"⚠️ 데이터 파일을 불러오는 중 오류가 발생했습니다. 'countriesMBTI_16types.csv' 파일이 코드와 같은 폴더에 있는지 확인해주세요.\n\n상세 에러: {e}")
+    st.error(f"⚠️ 'countriesMBTI_16types.csv' 파일을 찾을 수 없거나 로드하는 중 오류가 발생했습니다. 파일을 확인해주세요.\n\n에러 내용: {e}")
     st.stop()
 
 # 4. 사이드바 - 국가 선택
@@ -70,7 +70,7 @@ if not country_data.empty:
         if i == 0:
             colors.append("#FF4B4B")  # 1등: 스트림릿 레드
         else:
-            colors.append(blue_palette[i - 1])  # 나머지: 파란색 그라데이션 (높을수록 진함)
+            colors.append(blue_palette[i - 1])  # 나머지: 파란색 그라데이션
 
     # 7. 막대그래프 시각화
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -81,14 +81,14 @@ if not country_data.empty:
     ax.set_ylabel("Ratio", fontsize=12, labelpad=10)
     plt.xticks(rotation=45, ha="right", fontsize=10)
     
-    # 여백 및 테두리 정돈
+    # 테두리 정돈 및 여백 조절
     sns.despine(top=True, right=True)
     plt.tight_layout()
     
     # 스트림릿에 그래프 출력
     st.pyplot(fig)
     
-    # 8. 상세 데이터 테이블
+    # 8. 상세 데이터 테이블 보기
     with st.expander("📋 상세 데이터 테이블 보기"):
         st.dataframe(chart_df, use_container_width=True)
 
