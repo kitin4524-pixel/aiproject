@@ -653,5 +653,3 @@ st.info("""
 st.caption(
     "Monthly Temperature Analysis & Prediction"
 )
-
-
