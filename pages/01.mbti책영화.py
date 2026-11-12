@@ -1,376 +1,315 @@
 
+streamlit
+pandas
+numpy
+plotly
+scikit-learn
+
 import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from pathlib import Path
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
-# 페이지 설정: 반드시 가장 먼저 실행!
+# 페이지 설정
 st.set_page_config(
-    page_title="MBTI 진로 탐험소",
-    page_icon="🧭",
-    layout="centered"
+    page_title="붓꽃 품종 예측",
+    page_icon="🌸",
+    layout="wide"
 )
 
-# MBTI별 진로 데이터
-CAREERS = {
-    "ISTJ": [
-        {
-            "job": "회계사 💼",
-            "major": "회계학과, 경영학과, 세무학과",
-            "personality": "꼼꼼하고 책임감이 강하며 숫자를 정확하게 다루는 사람",
-            "salary": "약 7,000만 원",
-            "reason": "자료를 체계적으로 정리하고 정확성을 중요하게 여기는 성향과 잘 맞아요."
-        },
-        {
-            "job": "품질관리 전문가 🔍",
-            "major": "산업공학과, 화학공학과, 식품공학과",
-            "personality": "세심하고 체계적이며 작은 문제도 놓치지 않는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "제품의 품질을 확인하고 문제를 찾아 개선하는 업무와 잘 맞아요."
-        }
-    ],
-
-    "ISFJ": [
-        {
-            "job": "초등학교 교사 🍎",
-            "major": "초등교육과",
-            "personality": "책임감이 있고 다른 사람을 배려하는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "학생들의 성장을 돕고 학습을 이끄는 일과 잘 맞아요."
-        },
-        {
-            "job": "임상병리사 🧪",
-            "major": "임상병리학과",
-            "personality": "꼼꼼하고 차분하며 정확한 절차를 지키는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "검사 과정을 정확하게 수행하는 능력이 중요해요."
-        }
-    ],
-
-    "INFJ": [
-        {
-            "job": "상담심리 전문가 🫶",
-            "major": "심리학과, 상담심리학과",
-            "personality": "다른 사람의 감정을 이해하고 깊이 생각하는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "상대방의 이야기를 듣고 문제 해결을 돕는 일과 잘 맞아요."
-        },
-        {
-            "job": "작가 ✍️",
-            "major": "국어국문학과, 문예창작학과",
-            "personality": "상상력이 풍부하고 글로 생각을 표현하는 사람",
-            "salary": "개인차가 큼",
-            "reason": "자신만의 생각과 이야기를 글로 전달할 수 있어요."
-        }
-    ],
-
-    "INTJ": [
-        {
-            "job": "데이터 분석가 📊",
-            "major": "통계학과, 데이터사이언스학과, 컴퓨터공학과",
-            "personality": "논리적이고 분석적이며 문제 해결을 좋아하는 사람",
-            "salary": "약 5,000만 원",
-            "reason": "데이터를 분석하고 해결책을 찾는 일과 잘 맞아요."
-        },
-        {
-            "job": "건축가 🏙️",
-            "major": "건축학과, 건축공학과",
-            "personality": "계획적이고 독립적이며 체계적으로 생각하는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "아이디어를 구체적인 설계로 발전시키는 능력을 활용할 수 있어요."
-        }
-    ],
-
-    "ISTP": [
-        {
-            "job": "기계 엔지니어 ⚙️",
-            "major": "기계공학과, 메카트로닉스공학과",
-            "personality": "실용적이고 침착하며 기계에 관심이 많은 사람",
-            "salary": "약 5,000만 원",
-            "reason": "기계의 작동 원리를 이해하고 문제를 해결하는 일과 잘 맞아요."
-        },
-        {
-            "job": "제품 디자이너 🧩",
-            "major": "산업디자인학과, 제품디자인학과",
-            "personality": "관찰력이 좋고 직접 만드는 것을 좋아하는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "사용하기 편리하고 실용적인 제품을 만드는 일과 잘 맞아요."
-        }
-    ],
-
-    "ISFP": [
-        {
-            "job": "시각 디자이너 🎨",
-            "major": "시각디자인학과, 커뮤니케이션디자인학과",
-            "personality": "감각적이고 자신만의 표현 방식을 중요하게 여기는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "색상과 형태를 활용해 아이디어를 표현하는 일과 잘 맞아요."
-        },
-        {
-            "job": "파티시에 🧁",
-            "major": "제과제빵과, 호텔제과제빵학과, 식품조리학과",
-            "personality": "섬세하고 감각적이며 손으로 무언가 만드는 것을 좋아하는 사람",
-            "salary": "약 3,000만 원",
-            "reason": "맛과 모양을 다듬어 자신만의 디저트를 만드는 일과 잘 맞아요."
-        }
-    ],
-
-    "INFP": [
-        {
-            "job": "콘텐츠 작가 📝",
-            "major": "문예창작학과, 국어국문학과, 미디어학과",
-            "personality": "상상력이 풍부하고 자신의 생각을 표현하는 것을 좋아하는 사람",
-            "salary": "개인차가 큼",
-            "reason": "이야기와 콘텐츠를 통해 생각과 감정을 전달할 수 있어요."
-        },
-        {
-            "job": "일러스트레이터 🖌️",
-            "major": "일러스트레이션학과, 시각디자인학과",
-            "personality": "창의적이고 감수성이 풍부한 사람",
-            "salary": "개인차가 큼",
-            "reason": "독창적인 그림과 캐릭터를 표현하는 일과 잘 맞아요."
-        }
-    ],
-
-    "INTP": [
-        {
-            "job": "소프트웨어 개발자 💻",
-            "major": "컴퓨터공학과, 소프트웨어학과",
-            "personality": "호기심이 많고 논리적으로 생각하는 사람",
-            "salary": "약 5,000만 원",
-            "reason": "코드를 분석하고 복잡한 문제를 해결하는 일과 잘 맞아요."
-        },
-        {
-            "job": "연구원 🔬",
-            "major": "자연과학 및 공학 계열 학과",
-            "personality": "탐구심이 강하고 새로운 지식을 배우는 것을 좋아하는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "자료를 분석하고 새로운 지식을 발견하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ESTP": [
-        {
-            "job": "영업 전문가 🤝",
-            "major": "경영학과, 마케팅학과, 유통학과",
-            "personality": "활동적이고 순발력이 좋으며 소통을 즐기는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "고객과 소통하고 상황에 맞게 대응하는 일과 잘 맞아요."
-        },
-        {
-            "job": "이벤트 기획자 🎉",
-            "major": "광고홍보학과, 문화콘텐츠학과",
-            "personality": "적극적이고 실행력이 있으며 현장 활동을 좋아하는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "행사를 기획하고 현장의 문제를 해결하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ESFP": [
-        {
-            "job": "영상 콘텐츠 제작자 🎬",
-            "major": "미디어학과, 영상학과, 방송영상학과",
-            "personality": "표현력이 좋고 활동적이며 사람들과 어울리는 것을 좋아하는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "사람들의 흥미를 끄는 영상과 콘텐츠를 만드는 일과 잘 맞아요."
-        },
-        {
-            "job": "호텔 서비스 전문가 🏨",
-            "major": "호텔경영학과, 관광학과",
-            "personality": "친화력이 좋고 유연하게 대응하는 사람",
-            "salary": "약 3,500만 원",
-            "reason": "다양한 사람을 만나고 좋은 서비스를 제공하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ENFP": [
-        {
-            "job": "광고 기획자 💡",
-            "major": "광고홍보학과, 미디어커뮤니케이션학과",
-            "personality": "아이디어가 풍부하고 창의적인 생각을 좋아하는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "새로운 캠페인을 기획하고 메시지를 전달하는 일과 잘 맞아요."
-        },
-        {
-            "job": "브랜드 마케터 🚀",
-            "major": "경영학과, 마케팅학과",
-            "personality": "적극적이고 소통을 즐기며 새로운 시도를 좋아하는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "브랜드의 매력을 찾아내고 사람들에게 알리는 일과 잘 맞아요."
-        }
-    ],
-
-    "ENTP": [
-        {
-            "job": "창업가 🚀",
-            "major": "경영학과, 창업학과, 산업공학과",
-            "personality": "도전을 즐기고 새로운 아이디어를 발전시키는 사람",
-            "salary": "개인차가 매우 큼",
-            "reason": "새로운 사업 기회를 발견하고 아이디어를 실현하는 일과 잘 맞아요."
-        },
-        {
-            "job": "서비스 기획자 📱",
-            "major": "산업공학과, 경영학과, 컴퓨터공학과",
-            "personality": "논리적이고 호기심이 많으며 다양한 가능성을 생각하는 사람",
-            "salary": "약 5,000만 원",
-            "reason": "사람들의 불편함을 발견하고 더 나은 서비스를 만드는 일과 잘 맞아요."
-        }
-    ],
-
-    "ESTJ": [
-        {
-            "job": "프로젝트 관리자 📋",
-            "major": "경영학과, 산업공학과",
-            "personality": "계획적이고 책임감이 강하며 목표 달성을 중요하게 생각하는 사람",
-            "salary": "약 5,500만 원",
-            "reason": "일정과 업무를 관리하고 목표를 달성하는 일과 잘 맞아요."
-        },
-        {
-            "job": "물류 관리자 🚚",
-            "major": "물류학과, 유통학과, 산업공학과",
-            "personality": "체계적이고 판단력이 좋으며 효율성을 중요하게 여기는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "상품의 이동과 재고를 효율적으로 관리하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ESFJ": [
-        {
-            "job": "인사 담당자 👥",
-            "major": "경영학과, 심리학과, 행정학과",
-            "personality": "협력적이고 친절하며 다른 사람을 잘 살피는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "직원들의 소통과 조직 생활을 돕는 일과 잘 맞아요."
-        },
-        {
-            "job": "간호사 🩺",
-            "major": "간호학과",
-            "personality": "책임감이 있고 세심하며 다른 사람을 돕는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "환자를 돌보고 의료진과 협력하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ENFJ": [
-        {
-            "job": "교사 📚",
-            "major": "교육학과 또는 교과 관련 학과",
-            "personality": "소통 능력이 좋고 다른 사람의 성장을 돕는 사람",
-            "salary": "약 4,500만 원",
-            "reason": "학생들과 소통하고 학습을 이끄는 일과 잘 맞아요."
-        },
-        {
-            "job": "홍보 전문가 📣",
-            "major": "광고홍보학과, 미디어커뮤니케이션학과",
-            "personality": "표현력이 좋고 사람들과 관계를 맺는 것을 좋아하는 사람",
-            "salary": "약 4,000만 원",
-            "reason": "브랜드와 조직의 이야기를 효과적으로 전달하는 일과 잘 맞아요."
-        }
-    ],
-
-    "ENTJ": [
-        {
-            "job": "경영 컨설턴트 📈",
-            "major": "경영학과, 경제학과, 산업공학과",
-            "personality": "목표 지향적이고 분석적이며 전략을 세우는 것을 좋아하는 사람",
-            "salary": "약 7,000만 원",
-            "reason": "기업의 문제를 분석하고 해결 전략을 제시하는 일과 잘 맞아요."
-        },
-        {
-            "job": "사업 개발 담당자 🌐",
-            "major": "경영학과, 국제통상학과, 경제학과",
-            "personality": "추진력이 있고 협상과 전략 수립을 좋아하는 사람",
-            "salary": "약 5,000만 원",
-            "reason": "새로운 사업 기회를 찾고 기업의 성장을 돕는 일과 잘 맞아요."
-        }
-    ]
-}
-
-
-# 화면 구성
-st.title("🧭 MBTI 진로 탐험소")
-st.subheader("나에게 어울리는 직업은 무엇일까? ✨")
-
+st.title("🌸 AI 붓꽃 품종 예측 프로그램")
 st.write(
-    "MBTI를 선택하고 나와 잘 맞을 수 있는 진로 2가지를 찾아봐요!"
+    "꽃잎의 길이와 너비를 입력하면 "
+    "인공지능이 붓꽃의 품종을 예측해 줍니다."
 )
-
-st.info(
-    "💡 MBTI는 진로를 결정하는 정답이 아니라 "
-    "자신의 성향을 알아보는 참고 자료예요."
-)
-
-# MBTI 선택
-mbti_list = [
-    "ISTJ", "ISFJ", "INFJ", "INTJ",
-    "ISTP", "ISFP", "INFP", "INTP",
-    "ESTP", "ESFP", "ENFP", "ENTP",
-    "ESTJ", "ESFJ", "ENFJ", "ENTJ"
-]
-
-selected_mbti = st.selectbox(
-    "🎯 나의 MBTI를 선택해 줘!",
-    ["선택하기"] + mbti_list
-)
-
-# 결과 출력
-if selected_mbti != "선택하기":
-
-    st.divider()
-
-    st.header(f"🌟 {selected_mbti} 추천 진로")
-
-    st.write(
-        "두 가지 직업을 살펴보고 나의 관심 분야와 "
-        "얼마나 잘 맞는지 생각해 봐!"
-    )
-
-    for index, career in enumerate(
-        CAREERS[selected_mbti], start=1
-    ):
-
-        with st.container(border=True):
-
-            st.subheader(
-                f"추천 진로 {index}. {career['job']}"
-            )
-
-            st.markdown("### 🎓 관련 학과")
-            st.write(career["major"])
-
-            st.markdown("### 🧠 적합한 성격")
-            st.write(career["personality"])
-
-            st.markdown("### ✨ 추천 이유")
-            st.write(career["reason"])
-
-            st.markdown("### 💰 참고 평균 연봉")
-            st.write(career["salary"])
-
-            st.caption(
-                "※ 연봉은 세전 기준의 예시용 추정치이며 "
-                "경력과 기업 규모 등에 따라 달라질 수 있어요."
-            )
-
-    st.success(
-        "🎉 나에게 맞는 진로를 찾기 위한 첫걸음 완료!"
-    )
-
-    st.markdown("### 🔎 더 자세히 알아보기")
-
-    st.markdown(
-        "[커리어넷 직업정보 바로가기](https://www.career.go.kr/)"
-    )
-
-    st.markdown(
-        "[워크피디아 임금정보 바로가기](https://www.wagework.go.kr/)"
-    )
-
-else:
-
-    st.warning(
-        "👆 먼저 나의 MBTI 유형을 선택해 줘!"
-    )
 
 st.divider()
 
-st.caption(
-    "🧡 나의 가능성은 MBTI 네 글자로 정해지지 않아!"
+# 1. CSV 파일 불러오기
+@st.cache_data
+def load_data():
+    file_path = Path(__file__).resolve().parent.parent / "Iris.csv"
+
+    if not file_path.exists():
+        raise FileNotFoundError(
+            f"CSV 파일을 찾을 수 없습니다: {file_path}"
+        )
+
+    for encoding in ["cp949", "utf-8-sig", "utf-8"]:
+        try:
+            data = pd.read_csv(file_path, encoding=encoding)
+            return data
+        except UnicodeDecodeError:
+            continue
+
+    raise ValueError("CSV 파일의 인코딩을 확인해 주세요.")
+
+try:
+    df = load_data()
+except Exception as e:
+    st.error(str(e))
+    st.stop()
+
+# 필요한 열 확인
+required_columns = ["꽃잎길이", "꽃잎너비", "품종"]
+
+if not all(col in df.columns for col in required_columns):
+    st.error("CSV 파일의 열 이름을 확인해 주세요.")
+    st.stop()
+
+# 2. 데이터 전처리
+df = df.dropna(subset=required_columns)
+
+X = df[["꽃잎길이", "꽃잎너비"]]
+y = df["품종"]
+
+# 3. 학습 데이터와 테스트 데이터 분리
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
 )
+
+# 4. 랜덤 포레스트 모델 생성
+model = RandomForestClassifier(
+    n_estimators=200,
+    random_state=42
+)
+
+# 정확도 평가용 학습
+model.fit(X_train, y_train)
+
+y_test_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_test_pred)
+
+# 실제 예측용 모델은 전체 데이터로 학습
+model.fit(X, y)
+
+# 품종별 색상
+species_colors = {
+    "Iris-setosa": "#3498DB",
+    "Iris-versicolor": "#F39C12",
+    "Iris-virginica": "#9B59B6"
+}
+
+# 5. 사용자 입력
+st.subheader("📝 꽃잎 크기 입력하기")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    petal_length = st.number_input(
+        "꽃잎길이 (cm)",
+        min_value=0.0,
+        max_value=8.0,
+        value=1.5,
+        step=0.1
+    )
+
+with col2:
+    petal_width = st.number_input(
+        "꽃잎너비 (cm)",
+        min_value=0.0,
+        max_value=4.0,
+        value=0.3,
+        step=0.1
+    )
+
+# 6. 품종 예측
+if st.button("🌸 품종 예측하기", use_container_width=True):
+
+    input_data = pd.DataFrame(
+        [[petal_length, petal_width]],
+        columns=["꽃잎길이", "꽃잎너비"]
+    )
+
+    prediction = model.predict(input_data)[0]
+    probabilities = model.predict_proba(input_data)[0]
+
+    st.divider()
+    st.subheader("🔍 AI 예측 결과")
+
+    st.success(f"예측된 붓꽃 품종: {prediction}")
+
+    st.metric(
+        "모델의 예측 확률",
+        f"{max(probabilities) * 100:.1f}%"
+    )
+
+    # 품종별 예측 확률
+    st.write("### 품종별 예측 확률")
+
+    probability_df = pd.DataFrame({
+        "품종": model.classes_,
+        "예측 확률(%)": probabilities * 100
+    })
+
+    st.bar_chart(
+        probability_df.set_index("품종"),
+        color="#2ECC71"
+    )
+
+    # 7. 그래프 영역 설정
+    st.divider()
+    st.subheader("📊 꽃잎 크기별 품종 분류 시각화")
+
+    x_min = max(0, X["꽃잎길이"].min() - 0.5)
+    x_max = X["꽃잎길이"].max() + 0.5
+    y_min = max(0, X["꽃잎너비"].min() - 0.5)
+    y_max = X["꽃잎너비"].max() + 0.5
+
+    xx, yy = np.meshgrid(
+        np.linspace(x_min, x_max, 200),
+        np.linspace(y_min, y_max, 200)
+    )
+
+    grid_data = pd.DataFrame({
+        "꽃잎길이": xx.ravel(),
+        "꽃잎너비": yy.ravel()
+    })
+
+    # 각 위치의 품종 예측
+    grid_prediction = model.predict(grid_data)
+
+    # 품종을 숫자로 변환
+    class_to_num = {
+        name: i for i, name in enumerate(model.classes_)
+    }
+
+    zz = np.array([
+        class_to_num[name] for name in grid_prediction
+    ]).reshape(xx.shape)
+
+    # 품종별 분류 영역 색상
+    colors = [
+        "#3498DB",
+        "#F39C12",
+        "#9B59B6"
+    ]
+
+    colorscale = [
+        [0.0, colors[0]],
+        [1/3, colors[0]],
+        [1/3 + 0.0001, colors[1]],
+        [2/3, colors[1]],
+        [2/3 + 0.0001, colors[2]],
+        [1.0, colors[2]]
+    ]
+
+    fig = go.Figure()
+
+    # 품종별 예측 영역
+    fig.add_trace(go.Heatmap(
+        x=np.linspace(x_min, x_max, 200),
+        y=np.linspace(y_min, y_max, 200),
+        z=zz,
+        colorscale=colorscale,
+        zmin=-0.5,
+        zmax=2.5,
+        opacity=0.25,
+        showscale=False,
+        hoverinfo="skip",
+        name="품종 분류 영역"
+    ))
+
+    # 기존 데이터 표시
+    for species in model.classes_:
+
+        subset = df[df["품종"] == species]
+
+        fig.add_trace(go.Scatter(
+            x=subset["꽃잎길이"],
+            y=subset["꽃잎너비"],
+            mode="markers",
+            name=species,
+            marker=dict(
+                color=species_colors.get(species, "#888888"),
+                size=8,
+                opacity=0.8
+            )
+        ))
+
+    # 사용자 입력값: 초록색 별
+    fig.add_trace(go.Scatter(
+        x=[petal_length],
+        y=[petal_width],
+        mode="markers",
+        name="내가 입력한 값 ★",
+        marker=dict(
+            color="green",
+            size=22,
+            symbol="star",
+            line=dict(color="black", width=1)
+        )
+    ))
+
+    fig.update_layout(
+        title="랜덤 포레스트 품종 분류 결과",
+        xaxis_title="꽃잎길이 (cm)",
+        yaxis_title="꽃잎너비 (cm)",
+        template="plotly_white",
+        height=600,
+        legend_title="데이터 구분",
+        hovermode="closest"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 8. 결과 해석
+    st.subheader("💡 왜 이 품종으로 분류되었을까?")
+
+    st.write(
+        f"입력한 꽃잎길이는 {petal_length:.1f}cm, "
+        f"꽃잎너비는 {petal_width:.1f}cm입니다."
+    )
+
+    st.write(
+        f"그래프에서 초록색 별은 입력한 데이터의 위치를 "
+        f"나타냅니다. 이 별이 위치한 분류 영역은 "
+        f"{prediction}으로 예측되는 영역입니다."
+    )
+
+    st.write(
+        "랜덤 포레스트는 여러 의사결정나무의 결과를 "
+        "종합하여 품종을 예측합니다. "
+        "아래 확률은 모델이 각 품종에 부여한 예측 확률입니다."
+    )
+
+    # 9. 모델 평가
+    st.divider()
+    st.subheader("🤖 AI 모델 성능")
+
+    st.metric(
+        "테스트 데이터 예측 정확도",
+        f"{accuracy * 100:.1f}%"
+    )
+
+    st.caption(
+        "전체 데이터 중 80%로 학습하고, "
+        "나머지 20%로 예측 정확도를 평가했습니다."
+    )
+
+    # 두 가지 입력 특성의 중요도
+    importance_df = pd.DataFrame({
+        "특성": X.columns,
+        "중요도": model.feature_importances_
+    }).sort_values("중요도", ascending=False)
+
+    st.write("### 품종 분류에 사용된 특성의 중요도")
+
+    st.bar_chart(
+        importance_df.set_index("특성"),
+        color="#8E44AD"
+    )
+
+else:
+    st.info(
+        "꽃잎길이와 꽃잎너비를 입력한 다음 "
+        "'품종 예측하기' 버튼을 눌러주세요."
+    )
